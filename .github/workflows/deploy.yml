@@ -1,0 +1,53 @@
+# .github/workflows/deploy.yml
+name: Deploy React App to GitHub Pages
+
+on:
+  push:
+    branches:
+      - main # This workflow will run when you push to the 'main' branch
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # GitHub-hosted runner with Ubuntu operating system
+
+    # Permissions are crucial for GitHub Actions to interact with your repository
+    # and deploy to GitHub Pages.
+    permissions:
+      contents: write # Allows the action to push the build output to gh-pages branch
+      pages: write    # Allows the action to deploy to GitHub Pages
+      id-token: write # Required for OIDC authentication by GitHub Pages
+
+    steps:
+      - name: Checkout repository code
+        # Uses the official action to check out your repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js environment
+        # Uses the official action to set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Specify a stable Node.js version (e.g., 18 or 20)
+
+      - name: Install project dependencies
+        # Installs packages listed in package.json
+        run: npm install # Use 'yarn install' if you prefer Yarn
+
+      - name: Fix react-scripts permissions
+        # This step is important for Linux/macOS environments in GitHub Actions
+        # to ensure the react-scripts executable has proper permissions.
+        # It's harmless on Windows but good practice for cross-platform compatibility.
+        run: chmod +x node_modules/.bin/react-scripts
+
+      - name: Build React application for production
+        # CI=false prevents Create React App from treating warnings as errors during build.
+        # PUBLIC_URL is critical for GitHub Pages, telling React where your app will be served from.
+        # Replace '/zdhc-wastewater-compliance-checker' with your exact GitHub repository name.
+        run: CI=false PUBLIC_URL=/zdhc-wastewater-compliance-checker npm run build
+
+      - name: Deploy to GitHub Pages
+        # Uses a popular action to deploy the 'build' folder content to GitHub Pages.
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # Automatically provided secret for authentication
+          publish_dir: ./build # The directory containing your built application files
+          publish_branch: gh-pages # The branch where the built files will be pushed; GitHub Pages serves from this branch
